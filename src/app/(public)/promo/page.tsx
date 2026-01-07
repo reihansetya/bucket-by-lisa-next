@@ -1,3 +1,3 @@
 export default function page() {
-  return <div>Promo</div>;
+  return <div>Promo Page</div>;
 }

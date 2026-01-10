@@ -1,10 +1,10 @@
 import Link from "next/link";
 import Image from "next/image";
 import { getDashboardStats } from "@/actions/dashboard";
-import { Package, Tags, ArrowRight, TrendingUp } from "lucide-react";
+import { Package, Tags, ArrowRight, TrendingUp, Star } from "lucide-react";
 
 export default async function AdminDashboard() {
-  const { totalProducts, totalCategories, recentProducts } =
+  const { totalProducts, totalCategories, recentProducts, totalBestSellers } =
     await getDashboardStats();
 
   return (
@@ -50,20 +50,19 @@ export default async function AdminDashboard() {
         </div>
 
         {/* Card 3: Status Toko (Placeholder) */}
-        {/* <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-gray-500 mb-1">
-              Status Toko
+              Produk Best Seller
             </p>
-            <h3 className="text-lg font-bold text-green-600 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-              Aktif
+            <h3 className="text-3xl font-bold text-gray-900">
+              {totalBestSellers}
             </h3>
           </div>
           <div className="p-3 bg-green-50 text-green-600 rounded-xl">
-            <TrendingUp size={24} />
+            <Star size={24} />
           </div>
-        </div> */}
+        </div>
       </div>
 
       {/* RECENT PRODUCTS SECTION */}

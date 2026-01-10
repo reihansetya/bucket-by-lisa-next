@@ -15,6 +15,11 @@ export async function getDashboardStats() {
     .from("categories")
     .select("*", { count: "exact", head: true });
 
+  const { count: bestSellerCount, error: bestSellerError } = await supabase
+    .from("products")
+    .select("*", { count: "exact", head: true })
+    .eq("is_best_seller", true);
+
   // 3. Ambil 5 Produk Terbaru
   const { data: recentProducts, error: recentError } = await supabase
     .from("products")
@@ -31,6 +36,7 @@ export async function getDashboardStats() {
   return {
     totalProducts: productCount || 0,
     totalCategories: categoryCount || 0,
+    totalBestSellers: bestSellerCount || 0,
     recentProducts: recentProducts || [],
   };
 }

@@ -39,6 +39,21 @@ export async function getProducts() {
   return data as Product[];
 }
 
+export async function getProductBestSeller() {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("products")
+    .select("*, categories(name)")
+    .eq("is_best_seller", true)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching products:", error);
+    return [];
+  }
+  return data as Product[];
+}
+
 export async function getProductById(id: string) {
   const supabase = await createClient();
   const { data, error } = await supabase

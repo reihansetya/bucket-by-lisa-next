@@ -51,7 +51,7 @@ export default async function HomePage() {
                   className="group bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300"
                 >
                   {/* WRAPPER GAMBAR (Square & Full) */}
-                  <div className="relative h-[400px] aspect-square w-full bg-gray-100 overflow-hidden">
+                  <div className="relative aspect-square w-full h-[275px] bg-gray-100 overflow-hidden">
                     <Image
                       src={imageUrl}
                       alt={product.name}

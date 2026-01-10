@@ -17,7 +17,7 @@ export default function CardProduct({ product }: CardProductProps) {
     <div className="group bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-300 flex flex-col h-full">
       {/* --- WRAPPER GAMBAR --- */}
       {/* UBAH DISINI: Ganti aspect-square menjadi fixed height h-[400px] (atau h-[250px] sm:h-[400px] agar mobile tidak terlalu panjang) */}
-      <div className="relative h-[400px] w-full bg-gray-50 overflow-hidden">
+      <div className="relative h-[275px] w-full bg-gray-50 overflow-hidden">
         <Image
           src={imageUrl}
           alt={product.name}

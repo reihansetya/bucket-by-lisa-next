@@ -10,21 +10,22 @@ export default function ProductImageGallery({ images }: { images: string[] }) {
   );
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col md:flex-row gap-4">
       {/* 1. GAMBAR UTAMA (BESAR) */}
-      <div className="relative aspect-square w-full bg-gray-50 rounded-2xl overflow-hidden border border-gray-100">
+      <div className="relative w-full md:flex-1 h-[62.5vh] md:h-[75vh] bg-gray-50 rounded-2xl overflow-hidden border border-gray-100 shadow-sm group">
         <Image
           src={selectedImage}
           alt="Product Image"
           fill
-          className="object-cover transition-all duration-500 hover:scale-105"
-          priority // Gambar utama diprioritaskan load-nya
+          sizes="(max-width: 768px) 100vw, 75vw"
+          className="md:object-contain object-cover transition-all duration-500 group-hover:scale-105"
+          priority
         />
       </div>
 
       {/* 2. THUMBNAILS (KECIL) */}
       {images && images.length > 1 && (
-        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide md:flex-col md:pb-0 md:w-24 md:h-[70vh] md:overflow-y-auto">
           {images.map((img, index) => (
             <button
               key={index}

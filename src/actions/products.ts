@@ -66,6 +66,27 @@ export async function getProductById(id: string) {
   return data;
 }
 
+export async function getRelatedProducts(
+  categoryId: string,
+  currentProductId: string
+) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("products")
+    .select("*, categories(name)")
+    .eq("category_id", categoryId) // 1. Filter Kategori Sama
+    .neq("id", currentProductId) // 2. Jangan tampilkan produk yang sedang dibuka
+    .limit(4); // 3. Batasi cuma 4 produk
+
+  if (error) {
+    console.error("Error fetching related products:", error);
+    return [];
+  }
+
+  return data as Product[];
+}
+
 // --- CREATE PRODUCT (BULK) ---
 export async function createProduct(formData: FormData) {
   const supabase = await createClient();

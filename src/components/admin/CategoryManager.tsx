@@ -92,9 +92,12 @@ export default function CategoryManager({
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Kategori Produk</h1>
           <p className="text-gray-500 text-sm">
-            Kelola label kategori untuk produkmu.
+            Manage Kategori kamu disini bub.
           </p>
         </div>
+      </div>
+
+      <div className="pb-5 w-full flex justify-end">
         <button
           onClick={openCreateModal}
           className="bg-primary text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-primary/90 transition-shadow shadow-lg shadow-primary/20"

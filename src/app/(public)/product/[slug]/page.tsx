@@ -59,7 +59,9 @@ export default async function ProductDetailPage({
     product.name
   }* seharga Rp ${product.price.toLocaleString(
     "id-ID"
-  )}. Apakah masih available?`;
+  )}. Apakah masih available?
+  \nLink Produk: https://www.bucketylisa.com/product/${product.slug}
+  `;
   const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(
     message
   )}`;

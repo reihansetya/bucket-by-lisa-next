@@ -24,6 +24,14 @@ async function uploadFile(file: File, supabase: SupabaseClient) {
 
   return data.publicUrl;
 }
+function createSlug(name: string) {
+  return name
+    .toLowerCase()
+    .replace(/ /g, "-") // Ganti spasi dengan strip
+    .replace(/[^\w-]+/g, ""); // Hapus karakter aneh
+}
+
+// END HELPER
 
 export async function getProducts() {
   const supabase = await createClient();
@@ -66,6 +74,18 @@ export async function getProductById(id: string) {
   return data;
 }
 
+export async function getProductBySlug(slug: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("products")
+    .select("*, categories(name)")
+    .eq("slug", slug) // 👈 Cari berdasarkan slug
+    .single();
+
+  if (error) return null;
+  return data as Product;
+}
+
 export async function getRelatedProducts(
   categoryId: string,
   currentProductId: string
@@ -92,6 +112,18 @@ export async function createProduct(formData: FormData) {
   const supabase = await createClient();
 
   const name = formData.get("name") as string;
+
+  let slug = createSlug(name);
+  const { data: existingSlug } = await supabase
+    .from("products")
+    .select("slug")
+    .eq("slug", slug)
+    .single();
+
+  if (existingSlug) {
+    slug = `${slug}-${Math.floor(Math.random() * 1000)}`;
+  }
+
   const description = formData.get("description") as string;
   const price = Number(formData.get("price"));
   const categoryId = formData.get("category_id") as string;
@@ -116,6 +148,7 @@ export async function createProduct(formData: FormData) {
 
   const { error: dbError } = await supabase.from("products").insert({
     name,
+    slug,
     description,
     price,
     category_id: categoryId,
@@ -139,6 +172,7 @@ export async function updateProduct(formData: FormData) {
 
   const id = formData.get("id") as string;
   const name = formData.get("name") as string;
+  const slug = createSlug(name);
   const description = formData.get("description") as string;
   const price = Number(formData.get("price"));
   const categoryId = formData.get("category_id") as string;
@@ -169,6 +203,7 @@ export async function updateProduct(formData: FormData) {
     .from("products")
     .update({
       name,
+      slug,
       description,
       price,
       category_id: categoryId,

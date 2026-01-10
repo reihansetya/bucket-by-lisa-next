@@ -53,7 +53,7 @@ export default function Hero() {
                 Lihat Katalog Produk
               </Link>
               <Link
-                href="https://wa.me/yournumber"
+                href="https://wa.me/6285156893702"
                 className="px-8 py-4 bg-white border-2 border-gray-100 text-gray-700 font-bold rounded-2xl hover:border-primary hover:text-primary transition-all text-center"
               >
                 Order / Tanya via WA

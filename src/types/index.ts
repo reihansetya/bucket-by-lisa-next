@@ -1,6 +1,7 @@
 export interface Product {
   id: string; // UUID dari Supabase
   name: string;
+  slug: string;
   description: string;
   price: number;
   images: string[]; // Array nama file gambar

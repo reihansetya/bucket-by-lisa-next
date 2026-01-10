@@ -6,7 +6,7 @@ import Image from "next/image";
 
 export default async function HomePage() {
   const products = await getProductBestSeller();
-
+  console.log("Products: ", products);
   return (
     <main>
       <Hero />
@@ -46,7 +46,7 @@ export default async function HomePage() {
 
               return (
                 <Link
-                  href={`/product/${product.id}`}
+                  href={`/product/${product.slug}`}
                   key={product.id}
                   className="group bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300"
                 >

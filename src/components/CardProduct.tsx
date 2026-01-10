@@ -56,7 +56,7 @@ export default function CardProduct({ product }: CardProductProps) {
           </span>
 
           <Link
-            href={`/product/${product.id}`}
+            href={`/product/${product.slug}`}
             className="w-full sm:w-auto text-center px-3 py-1.5 bg-primary/10 text-primary text-xs sm:text-sm font-bold rounded-lg hover:bg-primary hover:text-white transition-colors active:scale-95"
           >
             Detail

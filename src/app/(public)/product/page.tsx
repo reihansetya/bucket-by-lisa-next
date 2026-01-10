@@ -11,6 +11,7 @@ export const metadata = {
 export default async function ProductPage() {
   // 1. Fetch Data dari Supabase (Server Side)
   const products = await getProducts();
+  console.log("Products: ", products);
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">

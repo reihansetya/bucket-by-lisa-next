@@ -1,4 +1,8 @@
-import { getProductById, getRelatedProducts } from "@/actions/products";
+import {
+  getProductById,
+  getProductBySlug,
+  getRelatedProducts,
+} from "@/actions/products";
 import ProductImageGallery from "@/components/ProductImageGallery";
 import CardProduct from "@/components/CardProduct"; // 👈 Import CardProduct
 import { notFound } from "next/navigation";
@@ -7,15 +11,16 @@ import { MessageCircle, ShoppingBag, ArrowLeft, Share2 } from "lucide-react";
 import type { Metadata } from "next";
 
 interface ProductDetailPageProps {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 }
 
 // 1. GENERATE METADATA (Untuk SEO & Share Link WA)
 export async function generateMetadata({
   params,
 }: ProductDetailPageProps): Promise<Metadata> {
-  const { id } = await params;
-  const product = await getProductById(id);
+  const { slug } = await params;
+  // const product = await getProductById(id);
+  const product = await getProductBySlug(slug);
 
   if (!product) {
     return { title: "Produk Tidak Ditemukan" };
@@ -36,8 +41,9 @@ export default async function ProductDetailPage({
   params,
 }: ProductDetailPageProps) {
   // Await params (Wajib di Next.js 15)
-  const { id } = await params;
-  const product = await getProductById(id);
+  const { slug } = await params;
+  // const product = await getProductById(id);
+  const product = await getProductBySlug(slug);
 
   if (!product) {
     notFound(); // Akan menampilkan halaman 404 default Next.js

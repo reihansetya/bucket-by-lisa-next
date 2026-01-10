@@ -4,9 +4,10 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { Product } from "@/types";
+import { SupabaseClient } from "@supabase/supabase-js";
 
 // --- HELPER: Upload File Single ---
-async function uploadFile(file: File, supabase: any) {
+async function uploadFile(file: File, supabase: SupabaseClient) {
   const fileExt = file.name.split(".").pop();
   const fileName = `${Date.now()}-${Math.random()
     .toString(36)
@@ -28,9 +29,7 @@ export async function getProducts() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("products")
-    .select(
-      "id, name, price, created_at, images, category_id, categories(name)"
-    )
+    .select("*, categories(name)")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -60,6 +59,7 @@ export async function createProduct(formData: FormData) {
   const description = formData.get("description") as string;
   const price = Number(formData.get("price"));
   const categoryId = formData.get("category_id") as string;
+  const isBestSeller = formData.get("is_best_seller") === "true";
 
   // Ambil semua file dengan key 'images'
   const imageFiles = formData.getAll("images") as File[];
@@ -73,7 +73,7 @@ export async function createProduct(formData: FormData) {
         const url = await uploadFile(file, supabase);
         uploadedUrls.push(url);
       } catch (err) {
-        console.error("Skipped one file due to error");
+        console.error("Skipped one file due to error", err);
       }
     }
   }
@@ -83,6 +83,7 @@ export async function createProduct(formData: FormData) {
     description,
     price,
     category_id: categoryId,
+    is_best_seller: isBestSeller,
     images: uploadedUrls, // Simpan array URL
   });
 

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getProducts } from "@/actions/products";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Star } from "lucide-react";
 import Image from "next/image";
 import DeleteProductButton from "@/components/admin/DeleteProductButton";
 export default async function AdminProducts() {
@@ -27,7 +27,7 @@ export default async function AdminProducts() {
           <Plus size={18} /> Tambah Produk
         </Link>
       </div>
-
+      {console.log("products: ", products)}
       {/* DATA TABLE CARD */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
@@ -65,8 +65,14 @@ export default async function AdminProducts() {
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 font-medium text-gray-900">
+                    <td className="px-6  py-4 font-medium text-gray-900">
                       {product.name}
+                      {product.is_best_seller && (
+                        <Star
+                          size={18}
+                          className="md:ml-2 ml-1 md:mb-1 text-red-400 inline-block"
+                        />
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-semibold">

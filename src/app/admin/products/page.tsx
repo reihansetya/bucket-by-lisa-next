@@ -27,7 +27,6 @@ export default async function AdminProducts() {
           <Plus size={18} /> Tambah Produk
         </Link>
       </div>
-      {console.log("products: ", products)}
       {/* DATA TABLE CARD */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">

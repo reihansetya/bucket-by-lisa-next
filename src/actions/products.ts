@@ -106,6 +106,7 @@ export async function updateProduct(formData: FormData) {
   const description = formData.get("description") as string;
   const price = Number(formData.get("price"));
   const categoryId = formData.get("category_id") as string;
+  const isBestSeller = formData.get("is_best_seller") === "true";
 
   // 1. Ambil URL gambar lama yang DIPERTAHANKAN (dikirim sebagai string array)
   const existingImages = formData.getAll("existing_images") as string[];
@@ -136,6 +137,7 @@ export async function updateProduct(formData: FormData) {
       price,
       category_id: categoryId,
       images: finalImages,
+      is_best_seller: isBestSeller,
     })
     .eq("id", id);
 

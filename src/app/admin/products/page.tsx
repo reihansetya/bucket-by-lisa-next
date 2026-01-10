@@ -92,7 +92,7 @@ export default async function AdminProducts() {
                         </Link>
                         <DeleteProductButton
                           id={product.id}
-                          imageUrl={product.images[0] || null}
+                          imageUrl={product.images}
                           productName={product.name}
                         />
                       </div>

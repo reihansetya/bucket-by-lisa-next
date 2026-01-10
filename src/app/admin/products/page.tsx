@@ -85,7 +85,7 @@ export default async function AdminProducts() {
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2">
                         <Link
-                          href={`/admin/products/edit/${product.slug}`} // Pastikan href ini benar
+                          href={`/admin/products/edit/${product.slug}`}
                           className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                         >
                           <Pencil size={18} />

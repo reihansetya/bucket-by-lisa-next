@@ -1,4 +1,4 @@
-import { getProductById } from "@/actions/products";
+import { getProductBySlug } from "@/actions/products";
 import { getCategories } from "@/actions/categories";
 import EditProductForm from "./EditProductForm";
 import { notFound } from "next/navigation";
@@ -7,14 +7,14 @@ import { notFound } from "next/navigation";
 export default async function EditProductPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 }) {
   // 2. Await params terlebih dahulu
-  const { id } = await params;
+  const { slug } = await params;
 
   // 3. Gunakan variable 'id' yang sudah di-await
   const [product, categories] = await Promise.all([
-    getProductById(id),
+    getProductBySlug(slug),
     getCategories(),
   ]);
 

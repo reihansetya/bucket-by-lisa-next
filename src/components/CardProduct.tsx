@@ -31,9 +31,9 @@ export default function CardProduct({ product }: CardProductProps) {
         )}
 
         {/* Label Kategori (Opsional) */}
-        {product.category && (
+        {product.categories?.name && (
           <span className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-3 py-1 text-xs font-bold text-gray-700 rounded-full shadow-sm">
-            {product.category}
+            {product.categories.name}
           </span>
         )}
       </div>

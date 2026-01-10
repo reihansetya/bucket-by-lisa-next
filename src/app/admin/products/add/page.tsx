@@ -23,7 +23,9 @@ type Category = {
 export default function AddProductPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  // State Multiple Files
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
 
   // State Data
   const [categories, setCategories] = useState<Category[]>([]);
@@ -44,34 +46,38 @@ export default function AddProductPage() {
     fetchCats();
   }, []);
 
+  // -- LOGIC GAMBAR --
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      // Create previews
+      const newPreviews = Array.from(files).map((file) =>
+        URL.createObjectURL(file)
+      );
+      setPreviewUrls(newPreviews);
     }
   };
 
   // 2. Handle Submit Utama (Produk)
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault(); // Wajib: Mencegah reload browser
+    e.preventDefault();
     setLoading(true);
 
     const formData = new FormData(e.currentTarget);
 
     try {
       await createProduct(formData);
-      // Sukses -> Redirect akan ditangani oleh Server Action
+      // Sukses -> Redirect handled by Server Action
     } catch (error: any) {
       if (
         error.message === "NEXT_REDIRECT" ||
         error.digest?.includes("NEXT_REDIRECT")
       ) {
-        return; // Diamkan saja, biarkan Next.js melakukan redirect
+        return;
       }
       console.error("Error submit:", error);
       alert("Gagal menyimpan produk! Pastikan semua data terisi.");
-      setLoading(false); // Matikan loading jika gagal
+      setLoading(false);
     }
   };
 
@@ -98,7 +104,7 @@ export default function AddProductPage() {
       {/* HEADER */}
       <div className="flex items-center gap-4 mb-8">
         <Link
-          href="/admin"
+          href="/admin/products" // Kembali ke list produk, bukan dashboard utama
           className="p-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
         >
           <ArrowLeft size={20} className="text-gray-600" />
@@ -107,52 +113,84 @@ export default function AddProductPage() {
           <h1 className="text-2xl font-bold text-gray-900">
             Tambah Produk Baru
           </h1>
-          <p className="text-gray-500 text-sm">
-            Lengkapi detail produk bouquet cantikmu.
-          </p>
+          <p className="text-gray-500 text-sm">Lengkapi detail produk.</p>
         </div>
       </div>
 
       {/* FORM CARD */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
-        {/* PERBAIKAN 1: Gunakan onSubmit={handleSubmit} */}
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* IMAGE UPLOAD */}
+          {/* --- BAGIAN GAMBAR (MULTIPLE UPLOAD) --- */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Foto Produk
+            <label className="block text-sm font-semibold text-gray-700 mb-3">
+              Foto Produk (Bisa pilih banyak sekaligus)
             </label>
-            <div className="flex items-center gap-6">
-              <div className="relative w-32 h-32 bg-gray-50 border-2 border-dashed border-gray-300 rounded-2xl flex items-center justify-center overflow-hidden">
-                {previewUrl ? (
-                  <Image
-                    src={previewUrl}
-                    alt="Preview"
-                    fill
-                    className="object-cover"
-                  />
-                ) : (
-                  <ImageIcon className="text-gray-300" size={32} />
-                )}
-              </div>
-              <div className="flex-1">
-                <input
-                  type="file"
-                  name="image"
-                  id="image"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="hidden"
-                  required
-                />
+
+            {/* A. AREA PREVIEW GRID (Jika ada gambar) */}
+            {previewUrls.length > 0 && (
+              <div className="grid grid-cols-3 gap-4 mb-4">
+                {previewUrls.map((url, index) => (
+                  <div
+                    key={index}
+                    className="relative aspect-square rounded-xl overflow-hidden border border-gray-200 group bg-gray-50"
+                  >
+                    <Image
+                      src={url}
+                      alt={`Preview ${index}`}
+                      fill
+                      className="object-cover"
+                      unoptimized
+                    />
+                    {/* Badge Thumbnail */}
+                    {index === 0 && (
+                      <div className="absolute bottom-0 left-0 right-0 bg-primary/90 text-white text-[10px] font-medium text-center py-1">
+                        Thumbnail Utama
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+                {/* Tombol "Ganti" Kecil */}
                 <label
-                  htmlFor="image"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 hover:text-primary cursor-pointer transition-colors"
+                  htmlFor="images-input"
+                  className="relative aspect-square rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 hover:border-primary hover:text-primary transition-all text-gray-400 bg-white"
                 >
-                  <Upload size={16} /> Pilih Gambar
+                  <ImageIcon size={24} />
+                  <span className="text-xs mt-1 font-medium">Ganti Foto</span>
                 </label>
               </div>
-            </div>
+            )}
+
+            {/* B. AREA UPLOAD BESAR (Hanya muncul jika BELUM ada gambar) */}
+            {previewUrls.length === 0 && (
+              <label
+                htmlFor="images-input"
+                className="w-full h-40 bg-gray-50 border-2 border-dashed border-gray-300 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-gray-100 hover:border-primary/50 transition-all group"
+              >
+                <div className="p-3 bg-white rounded-full shadow-sm mb-3 group-hover:scale-110 transition-transform">
+                  <Upload className="text-primary" size={24} />
+                </div>
+                <span className="text-sm font-medium text-gray-700">
+                  Klik untuk upload foto
+                </span>
+                <span className="text-xs text-gray-400 mt-1">
+                  Bisa pilih banyak gambar sekaligus
+                </span>
+              </label>
+            )}
+
+            {/* C. INPUT FILE ASLI (HIDDEN) */}
+            {/* Input tunggal ini mengontrol kedua area di atas */}
+            <input
+              type="file"
+              name="images" // Sesuai Server Action (formData.getAll('images'))
+              id="images-input"
+              accept="image/*"
+              multiple // WAJIB: Agar bisa pilih banyak file
+              onChange={handleImageChange}
+              className="hidden"
+              required
+            />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -178,7 +216,7 @@ export default function AddProductPage() {
                 type="number"
                 name="price"
                 required
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg"
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
               />
             </div>
 
@@ -207,7 +245,7 @@ export default function AddProductPage() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(true)}
-                  className="p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary hover:text-white transition-colors"
+                  className="p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary hover:text-white transition-colors border border-primary/20"
                   title="Tambah Kategori Baru"
                 >
                   <Plus size={20} />
@@ -224,14 +262,13 @@ export default function AddProductPage() {
                 name="description"
                 rows={4}
                 required
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg"
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
               />
             </div>
           </div>
 
           {/* SUBMIT BUTTON */}
           <div className="pt-4 border-t border-gray-50">
-            {/* PERBAIKAN 2: Hapus onClick manual, biarkan form handler yang bekerja */}
             <button
               type="submit"
               disabled={loading}
@@ -252,13 +289,13 @@ export default function AddProductPage() {
 
       {/* MODAL ADD CATEGORY */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 transform transition-all scale-100">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold text-gray-900">Kategori Baru</h3>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-gray-400 hover:text-red-500"
+                className="text-gray-400 hover:text-red-500 transition-colors"
               >
                 <X size={20} />
               </button>
@@ -274,7 +311,7 @@ export default function AddProductPage() {
                   value={newCategoryName}
                   onChange={(e) => setNewCategoryName(e.target.value)}
                   placeholder="Misal: Bloom Box"
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                   autoFocus
                 />
               </div>

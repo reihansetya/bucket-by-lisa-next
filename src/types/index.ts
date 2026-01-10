@@ -6,6 +6,8 @@ export interface Product {
   images: string[]; // Array nama file gambar
   is_best_seller: boolean;
   created_at?: string;
+  category_id: string;
+  categories?: Category;
 }
 
 export interface Category {

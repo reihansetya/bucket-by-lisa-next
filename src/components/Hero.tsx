@@ -1,14 +1,38 @@
+"use client";
+
+import { log } from "console";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function Hero() {
+  const router = useRouter();
+
+  const [clickCount, setClickCount] = useState(0);
+
+  const handleEasterEgg = () => {
+    const newCount = clickCount + 1;
+    console.log("newCount: ", newCount);
+
+    setClickCount(newCount);
+
+    if (clickCount == 2) {
+      router.push("/admin");
+      setClickCount(0);
+    }
+  };
+
   return (
     <section className="relative overflow-hidden bg-white pt-12 pb-20 lg:pt-20">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col lg:flex-row items-center gap-12">
           {/* TEXT CONTENT */}
           <div className="w-full lg:w-1/2 text-center lg:text-left z-10">
-            <span className="inline-block px-4 py-1.5 mb-6 text-sm font-semibold tracking-wide text-primary uppercase bg-primary/10 rounded-full">
+            <span
+              onClick={handleEasterEgg}
+              className="inline-block px-4 py-1.5 mb-6 text-sm font-semibold tracking-wide text-primary uppercase bg-primary/10 rounded-full"
+            >
               Handmade with Love 🌸
             </span>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 leading-tight mb-6">

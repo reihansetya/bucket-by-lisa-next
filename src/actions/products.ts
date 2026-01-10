@@ -1,72 +1,89 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server"; // 👈 Ganti import ke server
-import { Product } from "@/types";
+import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { Product } from "@/types";
+
+// --- HELPER: Upload File Single ---
+async function uploadFile(file: File, supabase: any) {
+  const fileExt = file.name.split(".").pop();
+  const fileName = `${Date.now()}-${Math.random()
+    .toString(36)
+    .substring(7)}.${fileExt}`;
+  const filePath = `${fileName}`;
+
+  const { error } = await supabase.storage
+    .from("products")
+    .upload(filePath, file);
+
+  if (error) throw new Error("Gagal upload gambar");
+
+  const { data } = supabase.storage.from("products").getPublicUrl(filePath);
+
+  return data.publicUrl;
+}
 
 export async function getProducts() {
-  // 1. Inisialisasi client server (wajib pakai await di Next.js 15/16)
   const supabase = await createClient();
-
-  // 2. Query data seperti biasa
   const { data, error } = await supabase
     .from("products")
-    .select("*")
+    .select(
+      "id, name, price, created_at, images, category_id, categories(name)"
+    )
     .order("created_at", { ascending: false });
 
   if (error) {
     console.error("Error fetching products:", error);
     return [];
   }
-
   return data as Product[];
 }
 
+export async function getProductById(id: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("products")
+    .select("*, categories(id, name)")
+    .eq("id", id)
+    .single();
+
+  if (error) return null;
+  return data;
+}
+
+// --- CREATE PRODUCT (BULK) ---
 export async function createProduct(formData: FormData) {
   const supabase = await createClient();
 
-  // 1. Ambil data dari Form
   const name = formData.get("name") as string;
   const description = formData.get("description") as string;
   const price = Number(formData.get("price"));
   const categoryId = formData.get("category_id") as string;
-  const imageFile = formData.get("image") as File;
 
-  let imageUrl = null;
+  // Ambil semua file dengan key 'images'
+  const imageFiles = formData.getAll("images") as File[];
 
-  // 2. Proses Upload Gambar (Jika ada)
-  if (imageFile && imageFile.size > 0) {
-    const fileExt = imageFile.name.split(".").pop();
-    const fileName = `${Date.now()}-${Math.random()
-      .toString(36)
-      .substring(7)}.${fileExt}`;
-    const filePath = `${fileName}`;
+  const uploadedUrls: string[] = [];
 
-    // Upload ke Bucket 'products'
-    const { error: uploadError } = await supabase.storage
-      .from("products")
-      .upload(filePath, imageFile);
-
-    if (uploadError) {
-      console.error("Upload Error:", uploadError);
-      throw new Error("Gagal upload gambar");
+  // Loop upload semua gambar
+  for (const file of imageFiles) {
+    if (file.size > 0) {
+      try {
+        const url = await uploadFile(file, supabase);
+        uploadedUrls.push(url);
+      } catch (err) {
+        console.error("Skipped one file due to error");
+      }
     }
-
-    // Dapatkan URL Public
-    const { data: urlData } = supabase.storage
-      .from("products")
-      .getPublicUrl(filePath);
-
-    imageUrl = urlData.publicUrl;
   }
 
   const { error: dbError } = await supabase.from("products").insert({
     name,
     description,
     price,
-    category_id: categoryId, // 👈 Pakai ID Relasi
-    images: imageUrl ? [imageUrl] : [], // Simpan sebagai array
+    category_id: categoryId,
+    images: uploadedUrls, // Simpan array URL
   });
 
   if (dbError) {
@@ -76,32 +93,74 @@ export async function createProduct(formData: FormData) {
 
   revalidatePath("/admin");
   revalidatePath("/product");
-  redirect("/admin");
+  redirect("/admin/products");
 }
 
-export async function deleteProduct(id: string, imageUrl: string | null) {
+// --- UPDATE PRODUCT (BULK + EXISTING) ---
+export async function updateProduct(formData: FormData) {
   const supabase = await createClient();
 
-  // 1. Hapus Gambar dari Storage (Jika ada)
-  if (imageUrl) {
-    // Ekstrak nama file dari URL
-    // URL biasanya: .../storage/v1/object/public/products/nama-file.jpg
-    const fileName = imageUrl.split("/").pop();
+  const id = formData.get("id") as string;
+  const name = formData.get("name") as string;
+  const description = formData.get("description") as string;
+  const price = Number(formData.get("price"));
+  const categoryId = formData.get("category_id") as string;
 
-    if (fileName) {
-      await supabase.storage.from("products").remove([fileName]);
+  // 1. Ambil URL gambar lama yang DIPERTAHANKAN (dikirim sebagai string array)
+  const existingImages = formData.getAll("existing_images") as string[];
+
+  // 2. Ambil File gambar BARU
+  const newImageFiles = formData.getAll("new_images") as File[];
+
+  const newUploadedUrls: string[] = [];
+
+  // Upload gambar baru
+  for (const file of newImageFiles) {
+    if (file.size > 0) {
+      const url = await uploadFile(file, supabase);
+      newUploadedUrls.push(url);
     }
   }
 
-  // 2. Hapus Data dari Database
-  const { error } = await supabase.from("products").delete().eq("id", id);
+  // Gabungkan: Gambar Lama + Gambar Baru
+  // Urutan: User biasanya ingin gambar lama tetap di depan, atau bisa diatur di frontend.
+  // Di sini kita taruh gambar lama dulu, baru gambar baru.
+  const finalImages = [...existingImages, ...newUploadedUrls];
 
-  if (error) {
-    console.error("Error deleting product:", error);
-    throw new Error("Gagal menghapus produk");
+  const { error: dbError } = await supabase
+    .from("products")
+    .update({
+      name,
+      description,
+      price,
+      category_id: categoryId,
+      images: finalImages,
+    })
+    .eq("id", id);
+
+  if (dbError) {
+    console.error("Update Error:", dbError);
+    throw new Error("Gagal update produk");
   }
 
-  // 3. Refresh Halaman
   revalidatePath("/admin");
   revalidatePath("/product");
+  redirect("/admin/products");
+}
+
+export async function deleteProduct(id: string, imageUrls: string[] | null) {
+  // Logic delete tetap sama, tapi nanti bisa diupdate untuk loop hapus semua gambar di storage
+  const supabase = await createClient();
+
+  if (imageUrls && imageUrls.length > 0) {
+    const fileNames = imageUrls
+      .map((url) => url.split("/").pop())
+      .filter((n) => n !== undefined) as string[];
+    if (fileNames.length > 0) {
+      await supabase.storage.from("products").remove(fileNames);
+    }
+  }
+
+  await supabase.from("products").delete().eq("id", id);
+  revalidatePath("/admin");
 }

@@ -6,7 +6,7 @@ import { Trash2, Loader2 } from "lucide-react";
 
 interface DeleteProductButtonProps {
   id: string;
-  imageUrl: string[] | null;
+  imageUrl: string | null;
   productName: string;
 }
 

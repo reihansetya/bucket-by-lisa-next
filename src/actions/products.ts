@@ -5,6 +5,14 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { Product } from "@/types";
 import { SupabaseClient } from "@supabase/supabase-js";
+import { Search } from "lucide-react";
+
+interface ProductFilter {
+  name?: string;
+  categorySlug?: string;
+  sort?: string;
+  search?: string;
+}
 
 // --- HELPER: Upload File Single ---
 async function uploadFile(file: File, supabase: SupabaseClient) {
@@ -33,12 +41,39 @@ function createSlug(name: string) {
 
 // END HELPER
 
-export async function getProducts() {
+export async function getProducts(filter?: ProductFilter) {
   const supabase = await createClient();
-  const { data, error } = await supabase
+
+  let query = supabase
     .from("products")
-    .select("*, categories(name)")
-    .order("created_at", { ascending: false });
+    .select("*, categories!inner(name, slug)");
+
+  if (filter?.categorySlug && filter.categorySlug !== "all") {
+    query = query.eq("categories.slug", filter.categorySlug);
+  }
+
+  if (filter?.search) {
+    query = query.ilike("name", `%${filter?.search}%`);
+  }
+
+  //Sorting
+  switch (filter?.sort) {
+    case "price_asc":
+      query = query.order("price", { ascending: true });
+      break;
+    case "price_desc":
+      query = query.order("price", { ascending: false });
+      break;
+    case "oldest":
+      query = query.order("created_at", { ascending: true });
+      break;
+    default:
+      // Default: Newest (Terbaru)
+      query = query.order("created_at", { ascending: false });
+      break;
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error("Error fetching products:", error);

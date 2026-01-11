@@ -14,6 +14,14 @@ interface ProductFilter {
   search?: string;
 }
 
+interface CSVProductData {
+  name: string;
+  description: string;
+  price: string | number;
+  category: string;
+  is_best_seller: string | boolean;
+}
+
 // --- HELPER: Upload File Single ---
 async function uploadFile(file: File, supabase: SupabaseClient) {
   const fileExt = file.name.split(".").pop();
@@ -38,9 +46,9 @@ function createSlug(name: string) {
     .replace(/ /g, "-") // Ganti spasi dengan strip
     .replace(/[^\w-]+/g, ""); // Hapus karakter aneh
 }
-
 // END HELPER
 
+// --- GET ALL PRODUCTS ---
 export async function getProducts(filter?: ProductFilter) {
   const supabase = await createClient();
 
@@ -141,6 +149,7 @@ export async function getRelatedProducts(
 
   return data as Product[];
 }
+// END GET PRODUCTS
 
 // --- CREATE PRODUCT (BULK) ---
 export async function createProduct(formData: FormData) {
@@ -201,6 +210,127 @@ export async function createProduct(formData: FormData) {
   redirect("/admin/products");
 }
 
+// Create Product from Import CSV
+export async function importProductsFromCSV(
+  csvData: CSVProductData[],
+  createMissingCategories: boolean = false // Parameter baru
+) {
+  const supabase = await createClient();
+
+  // 1. Ambil Kategori Existing
+  const { data: categories } = await supabase
+    .from("categories")
+    .select("id, name");
+
+  // Map Name (lowercase) -> ID
+  // Gunakan let agar bisa kita update nanti jika ada kategori baru
+  const categoryMap = new Map(
+    categories?.map((c) => [c.name.toLowerCase().trim(), c.id])
+  );
+
+  // 2. Scan CSV untuk cari kategori yang BELUM ADA di database
+  const missingCategories = new Set<string>();
+
+  for (const row of csvData) {
+    if (row.category) {
+      const catNameRaw = row.category.trim();
+      const catNameLower = catNameRaw.toLowerCase();
+
+      if (!categoryMap.has(catNameLower)) {
+        // Simpan nama aslinya (Capital case) untuk di-insert nanti
+        missingCategories.add(catNameRaw);
+      }
+    }
+  }
+
+  // 3. LOGIKA KONFIRMASI
+  // Jika ada kategori hilang DAN user belum memberi izin buat baru
+  if (missingCategories.size > 0 && !createMissingCategories) {
+    return {
+      success: false,
+      requiresConfirmation: true, // Flag khusus
+      missingCategories: Array.from(missingCategories), // Kirim list kategori yg hilang ke frontend
+    };
+  }
+
+  // 4. BUAT KATEGORI BARU (Jika user setuju)
+  if (missingCategories.size > 0 && createMissingCategories) {
+    const newCatsToInsert = Array.from(missingCategories).map((name) => ({
+      name: name,
+      slug: createSlug(name), // Generate slug simpel
+    }));
+
+    const { data: createdCats, error: catError } = await supabase
+      .from("categories")
+      .insert(newCatsToInsert)
+      .select();
+
+    if (catError) {
+      return {
+        success: false,
+        message: "Gagal membuat kategori baru: " + catError.message,
+      };
+    }
+
+    // Update Map kita dengan kategori yang baru saja dibuat
+    createdCats?.forEach((c) => {
+      categoryMap.set(c.name.toLowerCase().trim(), c.id);
+    });
+  }
+
+  // 5. INSERT PRODUK (Logika lama, tapi sekarang categoryMap sudah lengkap)
+  const productsToInsert = [];
+  const errors = [];
+
+  for (const [index, row] of csvData.entries()) {
+    if (!row.name) {
+      errors.push(`Baris ${index + 1}: Nama produk kosong.`);
+      continue;
+    }
+
+    let slug = createSlug(row.name);
+    slug = `${slug}-${Math.floor(Math.random() * 10000)}`;
+
+    const catName = row.category?.toLowerCase().trim();
+    const categoryId = categoryMap.get(catName);
+
+    if (!categoryId) {
+      // Seharusnya tidak masuk sini jika logika di atas benar
+      errors.push(`Baris ${index + 1}: Kategori "${row.category}" error.`);
+      continue;
+    }
+
+    productsToInsert.push({
+      name: row.name,
+      slug: slug,
+      description: row.description || "",
+      price: Number(row.price) || 0,
+      category_id: categoryId,
+      is_best_seller: String(row.is_best_seller).toLowerCase() === "true",
+      images: [],
+    });
+  }
+
+  if (productsToInsert.length > 0) {
+    const { error } = await supabase.from("products").insert(productsToInsert);
+    if (error) {
+      return {
+        success: false,
+        message: "Gagal simpan produk: " + error.message,
+      };
+    }
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/product");
+
+  return {
+    success: true,
+    count: productsToInsert.length,
+    errors: errors,
+  };
+}
+
 // --- UPDATE PRODUCT (BULK + EXISTING) ---
 export async function updateProduct(formData: FormData) {
   const supabase = await createClient();
@@ -256,7 +386,7 @@ export async function updateProduct(formData: FormData) {
   revalidatePath("/product");
   redirect("/admin/products");
 }
-
+// --- DELETE PRODUCT ---
 export async function deleteProduct(id: string, imageUrls: string[] | null) {
   // Logic delete tetap sama, tapi nanti bisa diupdate untuk loop hapus semua gambar di storage
   const supabase = await createClient();

@@ -3,6 +3,7 @@ import { getProducts } from "@/actions/products";
 import { Plus, Pencil, Star } from "lucide-react";
 import Image from "next/image";
 import DeleteProductButton from "@/components/admin/DeleteProductButton";
+import ProductImportExport from "@/components/admin/ProductImportExport";
 export default async function AdminProducts() {
   const products = await getProducts();
   // tes
@@ -19,7 +20,8 @@ export default async function AdminProducts() {
       </div>
 
       {/* BUTTON SECTION - Updated */}
-      <div className="pb-5 w-full flex justify-end">
+      <div className="pb-5 gap-2 w-full flex justify-end">
+        <ProductImportExport />
         <Link
           href="/admin/products/add"
           className="bg-primary text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"

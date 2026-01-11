@@ -8,8 +8,10 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Bucket by Lisa",
   description: "Buket bunga terbaik untuk momen spesial",
+  verification: {
+    google: "pYX3aDZGcytaw2tdefMJf51qlZe12jy9Ac3OlsCARPw",
+  },
 };
-
 export default function RootLayout({
   children,
 }: Readonly<{

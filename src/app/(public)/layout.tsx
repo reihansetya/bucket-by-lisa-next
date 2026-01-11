@@ -1,5 +1,6 @@
 // src/app/(public)/layout.tsx
-import Navbar from "@/components/Navbar"; // Pastikan path import sesuai
+import Footer from "@/components/Footer";
+import Navbar from "@/components/Navbar";
 
 export default function PublicLayout({
   children,
@@ -12,6 +13,7 @@ export default function PublicLayout({
       <main className="min-h-screen">
         {/* pt-20 ditambahkan agar konten tidak tertutup Navbar fixed */}
         {children}
+        <Footer isAdmin={false} />
       </main>
     </>
   );

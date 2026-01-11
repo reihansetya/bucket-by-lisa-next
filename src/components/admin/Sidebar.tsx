@@ -44,7 +44,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         fixed top-0 left-0 h-full w-64 bg-white border-r border-gray-100 z-30
         transform transition-transform duration-300 ease-in-out
         ${isOpen ? "translate-x-0" : "-translate-x-full"} 
-        lg:translate-x-0 lg:static lg:h-screen lg:flex-shrink-0
+        lg:translate-x-0 lg:static lg:h-auto lg:flex-shrink-0
       `}
       >
         {/* HEADER SIDEBAR */}

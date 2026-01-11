@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Sidebar from "@/components/admin/Sidebar";
+import Footer from "@/components/Footer";
 import { Menu } from "lucide-react";
 
 export default function AdminShell({
@@ -27,10 +28,23 @@ export default function AdminShell({
       {/* SIDEBAR COMPONENT */}
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
-      {/* MAIN CONTENT AREA */}
-      <main className="flex-1 p-4 lg:p-8 w-full">
-        <div className="max-w-7xl mx-auto">{children}</div>
-      </main>
+      {/* KONTEN KANAN */}
+      <div className="flex-1 flex flex-col relative min-h-screen">
+        {/* MAIN CONTENT */}
+        {/* lg:pb-24 -> Padding bawah besar HANYA di desktop (supaya tidak ketutup footer fixed) */}
+        {/* Di mobile padding bawah standar saja */}
+        <main className="flex-1 p-4 lg:p-8 w-full lg:pb-24">
+          <div className="max-w-7xl mx-auto">{children}</div>
+        </main>
+
+        {/* FOOTER WRAPPER */}
+        {/* Default (Mobile): Static (biasa) */}
+        {/* lg (Desktop): Fixed di bawah */}
+        <div className="w-full bg-gray-50 lg:fixed lg:bottom-0 lg:right-0 lg:pl-64 lg:z-10 transition-all duration-300">
+          {/* lg:pl-64 disesuaikan dengan lebar Sidebar Anda agar tidak tertutup */}
+          <Footer isAdmin={true} />
+        </div>
+      </div>
     </div>
   );
 }

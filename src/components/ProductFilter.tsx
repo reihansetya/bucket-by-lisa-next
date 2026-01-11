@@ -29,12 +29,12 @@ export default function ProductFilter({ categories }: ProductFilterProps) {
   };
 
   return (
-    <div className="mt-5 p-4mb-6 flex flex-col md:flex-row gap-4 justify-between items-center">
+    <div className="mt-5 md:px-4 px-2 flex flex-col md:flex-row gap-4 justify-between items-center">
       {/* FILTER KATEGORI */}
       <div className="w-full md:w-auto flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
         <button
           onClick={() => handleFilterChange("category", "all")}
-          className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${
+          className={`px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-colors ${
             currentCategory === "all"
               ? "bg-primary text-white"
               : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -47,7 +47,7 @@ export default function ProductFilter({ categories }: ProductFilterProps) {
             key={cat.id}
             // Asumsi kategori punya field slug
             onClick={() => handleFilterChange("category", cat.slug || cat.id)}
-            className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${
+            className={`px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-colors ${
               currentCategory === (cat.slug || cat.id)
                 ? "bg-primary text-white"
                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"

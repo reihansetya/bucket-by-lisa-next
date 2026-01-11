@@ -29,7 +29,7 @@ export default function ProductFilter({ categories }: ProductFilterProps) {
   };
 
   return (
-    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6 flex flex-col md:flex-row gap-4 justify-between items-center">
+    <div className="mt-5 p-4mb-6 flex flex-col md:flex-row gap-4 justify-between items-center">
       {/* FILTER KATEGORI */}
       <div className="w-full md:w-auto flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
         <button

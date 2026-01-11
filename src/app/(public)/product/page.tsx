@@ -47,14 +47,12 @@ export default async function ProductPage({ searchParams }: ProductPageProps) {
           </p>
           {/* Search Bar */}
           <ProductSearch />
+          {/* --- FILTER & SORT SECTION --- */}
+          <ProductFilter categories={categories || []} />
         </div>
       </div>
 
       <div className="container mx-auto px-4 mt-8">
-        {/* --- FILTER & SORT SECTION --- */}
-        {/* Kita render komponen Filter disini */}
-        <ProductFilter categories={categories || []} />
-
         {/* GRID PRODUCT SECTION */}
         <div className="mt-6">
           {products.length > 0 ? (

@@ -27,13 +27,6 @@ export const metadata: Metadata = {
     "Hadiah Wisuda Jakarta Selatan",
   ],
 
-  // 2. Konfigurasi Logo di Tab Browser (Favicon)
-  // Pastikan file 'logobucketlisa.png' ada di folder 'public'
-  icons: {
-    icon: "/logobucketlisa.png",
-    apple: "/logobucketlisa.png", // Untuk icon di iPhone/iPad
-  },
-
   openGraph: {
     title: "Bucket by Lisa | Jasa Buket Bunga Pondok Aren & Tangsel",
     description: "Jasa pembuatan buket bunga, uang, dan snack wisuda.",
@@ -76,7 +69,6 @@ export default function RootLayout({
               description:
                 "Jasa pembuatan bucket bunga, uang, dan snack di Bintaro, Pondok Aren, dan Tangerang Selatan.",
               url: "https://bucketbylisa.vercel.app",
-              telephone: "+6281234567890", // Ganti dengan nomor WA Anda jika mau
               areaServed: [
                 "Pondok Aren",
                 "Bintaro",

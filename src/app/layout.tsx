@@ -7,20 +7,30 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: {
     template: "%s | Bucket by Lisa - Bintaro & Tangsel",
-    default: "Bucket by Lisa | Jasa Buket Bunga Pondok Aren, Tangsel & Jakarta",
+    default: "Bucket by Lisa | Jasa Buket Pondok Aren, Tangsel & Jakarta",
   },
+  applicationName: "Bucket by Lisa",
   description:
     "Pesan buket bunga, uang, dan snack wisuda terbaik di Bintaro, Pondok Aren, Tangerang Selatan (Tangsel), dan Jakarta Selatan. Pengiriman cepat & harga terjangkau.",
   keywords: [
-    "Bucket Bintaro",
-    "Bucket Pondok Aren",
-    "Bucket Bunga Bintaro",
-    "Bucket Uang Tangsel",
-    "Bucket Wisuda Jakarta",
+    "buket Bintaro",
+    "buket Pondok Aren",
+    "buket Bunga Bintaro",
+    "buket Uang Tangsel",
+    "buket Wisuda Jakarta",
+    "buket Wisuda",
     "Florist Bintaro",
     "Toko Bunga Tangerang Selatan",
     "Hadiah Wisuda Jakarta Selatan",
   ],
+  openGraph: {
+    title: "Bucket by Lisa | Jasa Buket Bunga Pondok Aren & Tangsel",
+    description: "Jasa pembuatan buket bunga, uang, dan snack wisuda.",
+    url: "https://bucketbylisa.vercel.app",
+    siteName: "Bucket by Lisa",
+    locale: "id_ID",
+    type: "website",
+  },
   verification: {
     google: "pYX3aDZGcytaw2tdefMJf51qlZe12jy9Ac3OlsCARPw",
   },
@@ -54,6 +64,24 @@ export default function RootLayout({
                 "Jakarta Selatan",
               ],
               priceRange: "$$",
+            }),
+          }}
+        />
+        {/* JSON-LD untuk Nama Website (Brand Signal) */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              name: "Bucket by Lisa",
+              url: "https://bucketbylisa.vercel.app",
+              potentialAction: {
+                "@type": "SearchAction",
+                target:
+                  "https://bucketbylisa.vercel.app/?q={search_term_string}",
+                "query-input": "required name=search_term_string",
+              },
             }),
           }}
         />

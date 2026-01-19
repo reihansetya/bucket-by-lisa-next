@@ -39,7 +39,9 @@ export default async function AdminProducts() {
                 <th className="px-6 py-4 font-semibold">Nama Produk</th>
                 <th className="px-6 py-4 font-semibold">Kategori</th>
                 <th className="px-6 py-4 font-semibold">Harga</th>
-                <th className="px-6 py-4 font-semibold text-right">Aksi</th>
+                <th className="px-6 py-4 font-semibold text-right pr-7.5 md:pr-12">
+                  Aksi
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -49,48 +51,58 @@ export default async function AdminProducts() {
                     key={product.id}
                     className="hover:bg-gray-50/50 transition-colors"
                   >
-                    <td className="px-6 py-4">
-                      <div className="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden relative border border-gray-200">
+                    {/* KOLOM GAMBAR */}
+                    <td className="px-4 py-3 md:px-6 md:py-4">
+                      <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg bg-gray-100 overflow-hidden relative border border-gray-200">
                         {product.images && product.images[0] ? (
                           <Image
-                            src={product.images[0]} // Ambil gambar pertama
+                            src={product.images[0]}
                             alt={product.name}
                             className="w-full h-full object-cover"
                             width={100}
                             height={100}
                           />
                         ) : (
-                          <div className="flex items-center justify-center h-full text-xs text-gray-400">
+                          <div className="flex items-center justify-center h-full text-[10px] md:text-xs text-gray-400">
                             No Img
                           </div>
                         )}
                       </div>
                     </td>
-                    <td className="px-6  py-4 font-medium text-gray-900">
-                      {product.name}
-                      {product.is_best_seller && (
-                        <Star
-                          size={18}
-                          className="md:ml-2 ml-1 md:mb-1 text-red-400 inline-block"
-                        />
-                      )}
+
+                    {/* KOLOM NAMA PRODUK - Font Kecil di Mobile */}
+                    <td className="px-4 py-3 md:px-6 md:py-4 font-medium text-gray-900 text-sm md:text-base">
+                      <div className="flex items-center flex-wrap gap-1">
+                        <span>{product.name}</span>
+                        {product.is_best_seller && (
+                          <Star
+                            size={14} // Icon lebih kecil di mobile (default biasanya 16/18)
+                            className="text-red-400 md:w-[18px] md:h-[18px]"
+                          />
+                        )}
+                      </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-semibold">
-                        {/* Mengakses nama kategori dari objek relasi */}
+
+                    {/* KOLOM KATEGORI */}
+                    <td className="px-4 py-3 md:px-6 md:py-4">
+                      <span className="px-2 py-0.5 md:px-3 md:py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] md:text-xs font-semibold whitespace-nowrap">
                         {product.categories?.name || "Umum"}
                       </span>
                     </td>
-                    <td className="px-6 py-4 font-medium text-gray-600">
+
+                    {/* KOLOM HARGA - Font Kecil di Mobile */}
+                    <td className="px-4 py-3 md:px-6 md:py-4 font-medium text-gray-600 text-sm md:text-base whitespace-nowrap">
                       Rp {product.price.toLocaleString("id-ID")}
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-2">
+
+                    {/* KOLOM ACTION */}
+                    <td className="px-4 py-3 md:px-6 md:py-4 text-right">
+                      <div className="flex justify-end gap-1 md:gap-2">
                         <Link
                           href={`/admin/products/edit/${product.slug}`}
-                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          className="p-1.5 md:p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                         >
-                          <Pencil size={18} />
+                          <Pencil className="w-4 h-4 md:w-[18px] md:h-[18px]" />
                         </Link>
                         <DeleteProductButton
                           id={product.id}
@@ -105,7 +117,7 @@ export default async function AdminProducts() {
                 <tr>
                   <td
                     colSpan={5}
-                    className="px-6 py-12 text-center text-gray-400"
+                    className="px-6 py-12 text-center text-sm md:text-base text-gray-400"
                   >
                     Belum ada data produk. Silakan tambah produk baru.
                   </td>

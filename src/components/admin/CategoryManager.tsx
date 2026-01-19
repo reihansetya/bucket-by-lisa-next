@@ -112,8 +112,7 @@ export default function CategoryManager({
           <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
             <tr>
               <th className="px-6 py-4 font-semibold">Nama Kategori</th>
-              <th className="px-6 py-4 font-semibold">Slug (URL)</th>
-              <th className="px-6 py-4 font-semibold text-right">Aksi</th>
+              <th className="px-6 py-4 font-semibold text-right pr-12">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -125,9 +124,6 @@ export default function CategoryManager({
                 >
                   <td className="px-6 py-4 font-medium text-gray-900">
                     {cat.name}
-                  </td>
-                  <td className="px-6 py-4 text-gray-500 text-sm italic">
-                    {cat.slug || "-"}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2">

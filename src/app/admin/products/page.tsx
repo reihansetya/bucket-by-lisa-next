@@ -20,11 +20,11 @@ export default async function AdminProducts() {
       </div>
 
       {/* BUTTON SECTION - Updated */}
-      <div className="pb-5 gap-2 w-full flex justify-end">
+      <div className="pb-5 w-full flex flex-col items-end gap-3 md:flex-row md:justify-end md:items-center">
         <ProductImportExport />
         <Link
           href="/admin/products/add"
-          className="bg-primary text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
+          className="bg-primary text-white md:px-6 px-18.5 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20 w-fit md:w-auto justify-center"
         >
           <Plus size={18} /> Tambah Produk
         </Link>

@@ -52,7 +52,7 @@ export default function ProductImportExport() {
               `Kategori berikut tidak ditemukan di sistem:\n\n` +
                 `👉 ${missingList}\n\n` +
                 `Klik OK untuk membuat kategori ini secara OTOMATIS dan melanjutkan import.\n` +
-                `Klik Cancel untuk membatalkan proses import.`
+                `Klik Cancel untuk membatalkan proses import.`,
             );
 
             if (confirmCreate) {
@@ -104,7 +104,7 @@ export default function ProductImportExport() {
         title="Download Template CSV"
       >
         <FileSpreadsheet size={18} />
-        Template
+        Template CSV
       </button>
 
       {/* Input File Hidden + Tombol Trigger */}

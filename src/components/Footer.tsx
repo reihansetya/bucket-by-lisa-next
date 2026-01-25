@@ -22,7 +22,7 @@ export default function Footer({ isAdmin }: FooterProps) {
             />{" "}
             by
             <a
-              href="https://github.com/reihansetya"
+              href="https://www.linkedin.com/in/reihan-setya-abida-31515b1b9/"
               target="_blank"
               rel="noopener noreferrer"
               className="font-medium text-gray-600 hover:text-primary transition-colors"

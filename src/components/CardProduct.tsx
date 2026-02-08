@@ -13,6 +13,15 @@ export default function CardProduct({ product }: CardProductProps) {
       ? product.images[0]
       : "/images/heroImg.jpg";
 
+  const truncateWords = (text: string, limit: number) => {
+    if (!text) return "";
+    const words = text.trim().split(/\s+/); // Pisahkan berdasarkan spasi
+    if (words.length > limit) {
+      return words.slice(0, limit).join(" ") + "...";
+    }
+    return text;
+  };
+
   return (
     <div className="group bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-300 flex flex-col h-full">
       {/* --- WRAPPER GAMBAR --- */}
@@ -47,7 +56,7 @@ export default function CardProduct({ product }: CardProductProps) {
         </h3>
 
         <p className="text-xs text-gray-500 line-clamp-2 mb-2 hidden sm:block">
-          {product.description}
+          {truncateWords(product.description, 10)}
         </p>
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-auto gap-2">

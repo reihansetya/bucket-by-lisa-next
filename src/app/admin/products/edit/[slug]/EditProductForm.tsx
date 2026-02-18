@@ -14,10 +14,108 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import ImageCropper from "@/components/admin/ImageCropper";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  rectSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface EditProductFormProps {
   product: any;
   categories: any[];
+}
+
+
+interface ProductImage {
+  id: string;
+  type: "existing" | "new";
+  url: string;
+  file?: File;
+}
+
+// --- KOMPONEN ITEM SORTABLE ---
+function SortableImage({
+  image,
+  onRemove,
+}: {
+  image: ProductImage;
+  onRemove: () => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: image.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 100 : "auto",
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className={`relative aspect-square rounded-xl overflow-hidden border bg-white group touch-none ${
+        image.type === "new" ? "border-primary/50" : "border-gray-200"
+      }`}
+    >
+      <Image
+        src={image.url}
+        alt="Product Image"
+        fill
+        className="object-cover"
+        unoptimized={image.type === "existing"} // Gambar lama biasanya URL external/supabase
+      />
+
+      {/* Badge Utama (Index 0) - check di parent map nya saja biar gampang, atau pass props isFirst */}
+      
+      {/* Badge Baru */}
+      {image.type === "new" && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <span className="bg-primary text-white text-[10px] px-2 py-1 rounded-full shadow-sm">
+            Baru
+          </span>
+        </div>
+      )}
+
+      {/* Tombol Hapus */}
+      <button
+        type="button"
+        onClick={(e) => {
+            e.stopPropagation(); // Mencegah drag saat klik hapus
+            onRemove();
+        }}
+        // className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10 cursor-pointer pointer-events-auto"
+        // Ubah jadi selalu visible di mobile jika perlu, atau tetap hover d desktop
+        className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity z-10 cursor-pointer pointer-events-auto"
+        title="Hapus gambar ini"
+        onPointerDown={(e) => e.stopPropagation()} // Supaya tidak men-trigger drag
+      >
+        <X size={12} />
+      </button>
+    </div>
+  );
 }
 
 export default function EditProductForm({
@@ -27,13 +125,18 @@ export default function EditProductForm({
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
-  // --- STATE GAMBAR (DIPERBAIKI) ---
-  // Simpan array gambar yang sudah ada di DB
-  const [existingImages, setExistingImages] = useState<string[]>(
-    product.images || []
-  );
-  // Simpan preview gambar baru yang akan diupload
-  const [newPreviews, setNewPreviews] = useState<string[]>([]);
+  // --- STATE GAMBAR (DND) ---
+  // Inisialisasi gambar lama ke format ProductImage
+  const [images, setImages] = useState<ProductImage[]>(() => {
+    const existing: ProductImage[] = (product.images || []).map(
+      (url: string) => ({
+        id: url, // Gunakan URL sebagai ID unik untuk gambar lama
+        type: "existing",
+        url,
+      })
+    );
+    return existing;
+  });
 
   // State Kategori
   const [categories, setCategories] = useState(initialCategories);
@@ -46,26 +149,102 @@ export default function EditProductForm({
   const [newCategoryName, setNewCategoryName] = useState("");
   const [isAddingCategory, setIsAddingCategory] = useState(false);
 
+  // State Cropper
+  const [cropperImage, setCropperImage] = useState<string | null>(null);
+  const [cropperFileName, setCropperFileName] = useState("");
+  // Queue untuk crop multiple gambar
+  const [cropQueue, setCropQueue] = useState<{ src: string; name: string }[]>([]);
+
+  // -- SENSORS DND --
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+        activationConstraint: {
+            distance: 8, // Harus geser 8px baru dianggap drag (supaya klik biasa tetap jalan)
+        }
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   // -- HANDLERS GAMBAR --
 
-  // 1. Hapus Gambar Lama (Hanya hapus dari tampilan UI)
-  const removeExistingImage = (indexToRemove: number) => {
-    setExistingImages((prev) => prev.filter((_, i) => i !== indexToRemove));
+  // 1. Hapus Gambar
+  const removeImage = (idToRemove: string) => {
+    setImages((prev) => prev.filter((img) => img.id !== idToRemove));
   };
 
-  // 2. Tambah Gambar Baru (Preview)
+  // 2. Tambah Gambar Baru — Buka cropper dulu sebelum menambahkan
   const handleNewImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      const urls = Array.from(files).map((file) => URL.createObjectURL(file));
-      setNewPreviews((prev) => [...prev, ...urls]); // Append ke preview yg sudah ada (opsional)
-      // Note: Karena input file sifatnya replace, cara terbaik sbnrnya replace state preview
-      // Tapi untuk UX "Tambah", kita butuh trik khusus atau biarkan replace behaviour.
-      // Di sini kita pakai replace behaviour untuk newPreviews agar konsisten dengan input file HTML.
-      setNewPreviews(urls);
+      const fileArray = Array.from(files);
+      
+      // Buat queue untuk semua file yang dipilih
+      const queue = fileArray.map((file) => ({
+        src: URL.createObjectURL(file),
+        name: file.name,
+      }));
+
+      // Set file pertama ke cropper, sisanya ke queue
+      if (queue.length > 0) {
+        setCropperImage(queue[0].src);
+        setCropperFileName(queue[0].name);
+        setCropQueue(queue.slice(1));
+      }
+      
+      // Reset input value
+      e.target.value = ""; 
     }
   };
 
+  // Handle crop selesai
+  const handleCropComplete = (croppedFile: File) => {
+    // Tambahkan gambar yang sudah di-crop
+    const newImage: ProductImage = {
+      id: `new-${Date.now()}-${Math.random()}`,
+      type: "new",
+      url: URL.createObjectURL(croppedFile),
+      file: croppedFile,
+    };
+    setImages((prev) => [...prev, newImage]);
+
+    // Proses queue berikutnya
+    if (cropQueue.length > 0) {
+      const next = cropQueue[0];
+      setCropperImage(next.src);
+      setCropperFileName(next.name);
+      setCropQueue((prev) => prev.slice(1));
+    } else {
+      // Semua selesai, tutup cropper
+      setCropperImage(null);
+      setCropperFileName("");
+    }
+  };
+
+  // Handle crop cancel
+  const handleCropCancel = () => {
+    // Bersihkan semua queue
+    setCropperImage(null);
+    setCropperFileName("");
+    setCropQueue([]);
+  };
+
+  // 3. Handle Drag End
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setImages((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over.id);
+
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
+
+  // -- SUBMIT --
   // -- SUBMIT --
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -74,10 +253,46 @@ export default function EditProductForm({
 
     formData.append("id", product.id);
 
-    // KIRIM LIST GAMBAR LAMA YANG TERSISA
-    // (Gambar yg dihapus user tidak akan masuk ke sini, jadi nanti di server akan hilang)
-    existingImages.forEach((url) => {
-      formData.append("existing_images", url);
+    // KITA PERLU MENYUSUN ULANG DATA GAMBAR
+    // 1. existing_images: list URL gambar lama yang masih ada (sesuai urutan)
+    // 2. new_images: list File gambar baru (ini akan diupload di server)
+    // 3. image_order: JSON string yang memberi tahu server urutan akhir
+    
+    // Namun untuk simplifikasi di server action yang sudah kita rencanakan:
+    // Kita kirim "image_order" yang berisi array object: { type: 'existing' | 'new', value: url | new_file_index }
+    
+    const imageOrderPayload = images.map((img) => {
+        if (img.type === "existing") {
+            return { type: "existing", url: img.url };
+        } else {
+             // Untuk gambar baru, kita perlu tahu dia index ke berapa dari semua file baru yang dikirim
+             // Cari index relatif di antara gambar-gambar baru saja
+             const newImagesOnly = images.filter(i => i.type === "new");
+             const newIndex = newImagesOnly.findIndex(i => i.id === img.id);
+             return { type: "new", index: newIndex };
+        }
+    });
+
+    formData.append("image_order", JSON.stringify(imageOrderPayload));
+
+    // Append Existing Images (hanya untuk referensi/backup jika perlu, tapi logic utama pakai image_order)
+    // Tapi server action 'updateProduct' yang lama menharap 'existing_images'. 
+    // Kita tetap kirim untuk compatibility atau diubah di server.
+    // Sesuai plan, server akan baca image_order.
+    
+    // Append New Images Files
+    // Kita filter dulu yang type 'new'
+    const newImageItems = images.filter(img => img.type === "new");
+    newImageItems.forEach(img => {
+        if (img.file) {
+            formData.append("new_images", img.file);
+        }
+    });
+    
+    // Existing images array string (untuk kebutuhan validasi server jika perlu)
+    const existingItems = images.filter(img => img.type === "existing");
+    existingItems.forEach(img => {
+        formData.append("existing_images", img.url);
     });
 
     try {
@@ -135,74 +350,50 @@ export default function EditProductForm({
           {/* --- BAGIAN GAMBAR --- */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-3">
-              Foto Produk
+              Foto Produk (Drag untuk mengatur urutan)
             </label>
 
-            <div className="grid grid-cols-3 gap-4 mb-4">
-              {/* 1. RENDER GAMBAR LAMA */}
-              {existingImages.map((url, i) => (
-                <div
-                  key={url}
-                  className="relative aspect-square rounded-xl overflow-hidden border border-gray-200 group"
-                >
-                  <Image
-                    src={url}
-                    alt="Existing"
-                    fill
-                    className="object-cover"
-                    unoptimized
-                  />
-                  {/* Tombol Hapus Gambar Lama */}
-                  <button
-                    type="button"
-                    onClick={() => removeExistingImage(i)}
-                    className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                    title="Hapus gambar ini"
-                  >
-                    <X size={12} />
-                  </button>
-                  {i === 0 && newPreviews.length === 0 && (
-                    <div className="absolute bottom-0 w-full bg-black/60 text-white text-[10px] text-center py-1">
-                      Utama
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={images.map((img) => img.id)}
+                strategy={rectSortingStrategy}
+              >
+                <div className="grid grid-cols-3 gap-4 mb-4">
+                  {images.map((img, i) => (
+                    <div key={img.id} className="relative group">
+                       <SortableImage 
+                        image={img} 
+                        onRemove={() => removeImage(img.id)}
+                       />
+                       {/* Label Utama jika index 0 */}
+                       {i === 0 && (
+                         <div className="absolute bottom-0 left-0 right-0 w-full bg-black/60 text-white text-[10px] text-center py-1 rounded-b-xl z-20 pointer-events-none">
+                            Utama
+                         </div>
+                       )}
                     </div>
-                  )}
-                </div>
-              ))}
+                  ))}
 
-              {/* 2. RENDER GAMBAR BARU (PREVIEW) */}
-              {newPreviews.map((url, i) => (
-                <div
-                  key={i}
-                  className="relative aspect-square rounded-xl overflow-hidden border-2 border-primary/50"
-                >
-                  <Image
-                    src={url}
-                    alt="New Preview"
-                    fill
-                    className="object-cover opacity-90"
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="bg-primary text-white text-[10px] px-2 py-1 rounded-full shadow-sm">
-                      Baru
-                    </span>
-                  </div>
+                  {/* 3. INPUT UPLOAD (Kotak Tambah) */}
+                  <label className="relative aspect-square rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 hover:border-primary transition-all text-gray-400 hover:text-primary">
+                    <Plus size={24} />
+                    <span className="text-xs mt-1 font-medium">Tambah Foto</span>
+                    <input
+                      type="file"
+                      name="new_images_input" // Ganti nama agar tidak auto-bind ke formData secara raw (kita handle manual)
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={handleNewImageChange}
+                    />
+                  </label>
                 </div>
-              ))}
-
-              {/* 3. INPUT UPLOAD (Kotak Tambah) */}
-              <label className="relative aspect-square rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 hover:border-primary transition-all text-gray-400 hover:text-primary">
-                <Plus size={24} />
-                <span className="text-xs mt-1 font-medium">Tambah Foto</span>
-                <input
-                  type="file"
-                  name="new_images" // Sesuai Server Action (updateProduct)
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                  onChange={handleNewImageChange}
-                />
-              </label>
-            </div>
+              </SortableContext>
+            </DndContext>
             <p className="text-xs text-gray-400">
               Gambar yang dihapus akan hilang permanen setelah disimpan.
             </p>
@@ -343,6 +534,16 @@ export default function EditProductForm({
             </div>
           </div>
         </div>
+      )}
+
+      {/* MODAL CROP GAMBAR */}
+      {cropperImage && (
+        <ImageCropper
+          imageSrc={cropperImage}
+          onCropComplete={handleCropComplete}
+          onCancel={handleCropCancel}
+          originalFileName={cropperFileName}
+        />
       )}
     </div>
   );

@@ -5,7 +5,6 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { Product } from "@/types";
 import { SupabaseClient } from "@supabase/supabase-js";
-import { Search } from "lucide-react";
 
 interface ProductFilter {
   name?: string;
@@ -131,7 +130,7 @@ export async function getProductBySlug(slug: string) {
 
 export async function getRelatedProducts(
   categoryId: string,
-  currentProductId: string
+  currentProductId: string,
 ) {
   const supabase = await createClient();
 
@@ -213,7 +212,7 @@ export async function createProduct(formData: FormData) {
 // Create Product from Import CSV
 export async function importProductsFromCSV(
   csvData: CSVProductData[],
-  createMissingCategories: boolean = false // Parameter baru
+  createMissingCategories: boolean = false, // Parameter baru
 ) {
   const supabase = await createClient();
 
@@ -225,7 +224,7 @@ export async function importProductsFromCSV(
   // Map Name (lowercase) -> ID
   // Gunakan let agar bisa kita update nanti jika ada kategori baru
   const categoryMap = new Map(
-    categories?.map((c) => [c.name.toLowerCase().trim(), c.id])
+    categories?.map((c) => [c.name.toLowerCase().trim(), c.id]),
   );
 
   // 2. Scan CSV untuk cari kategori yang BELUM ADA di database
@@ -344,7 +343,7 @@ export async function updateProduct(formData: FormData) {
   const isBestSeller = formData.get("is_best_seller") === "true";
 
   // 1. Ambil URL gambar lama yang DIPERTAHANKAN (dikirim sebagai string array)
-  const existingImages = formData.getAll("existing_images") as string[];
+  // const existingImages = formData.getAll("existing_images") as string[];
 
   // 2. Ambil File gambar BARU
   const newImageFiles = formData.getAll("new_images") as File[];
@@ -359,10 +358,39 @@ export async function updateProduct(formData: FormData) {
     }
   }
 
-  // Gabungkan: Gambar Lama + Gambar Baru
-  // Urutan: User biasanya ingin gambar lama tetap di depan, atau bisa diatur di frontend.
-  // Di sini kita taruh gambar lama dulu, baru gambar baru.
-  const finalImages = [...existingImages, ...newUploadedUrls];
+  // Gabungkan berdasarkan IMAGE_ORDER (dari dnd-kit frontend)
+  const imageOrderJson = formData.get("image_order") as string;
+  let finalImages: string[] = [];
+
+  if (imageOrderJson) {
+    try {
+      const imageOrder = JSON.parse(imageOrderJson);
+      // imageOrder is array of { type: 'existing'|'new', url?: string, index?: number }
+
+      imageOrder.forEach(
+        (item: { type: string; url?: string; index?: number }) => {
+          if (item.type === "existing") {
+            if (item.url) finalImages.push(item.url);
+          } else if (item.type === "new") {
+            // item.index adalah index dari array newImageFiles (dan newUploadedUrls)
+            if (item.index !== undefined) {
+              const url = newUploadedUrls[item.index];
+              if (url) finalImages.push(url);
+            }
+          }
+        },
+      );
+    } catch (e) {
+      console.error("Failed to parse image_order", e);
+      // Fallback: existing + new
+      const existingImages = formData.getAll("existing_images") as string[];
+      finalImages = [...existingImages, ...newUploadedUrls];
+    }
+  } else {
+    // Fallback logic lama
+    const existingImages = formData.getAll("existing_images") as string[];
+    finalImages = [...existingImages, ...newUploadedUrls];
+  }
 
   const { error: dbError } = await supabase
     .from("products")

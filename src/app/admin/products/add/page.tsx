@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createProduct } from "@/actions/products";
 import { getCategories, createCategory } from "@/actions/categories";
 import { useRouter } from "next/navigation";
@@ -11,9 +11,11 @@ import {
   Image as ImageIcon,
   Plus,
   X,
+  Star,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import ImageCropper from "@/components/admin/ImageCropper";
 
 type Category = {
   id: string;
@@ -26,6 +28,9 @@ export default function AddProductPage() {
 
   // State Multiple Files
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  // Simpan File objects secara manual untuk akumulasi
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // State Data
   const [categories, setCategories] = useState<Category[]>([]);
@@ -35,6 +40,11 @@ export default function AddProductPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [isAddingCategory, setIsAddingCategory] = useState(false);
+
+  // State Cropper
+  const [cropperImage, setCropperImage] = useState<string | null>(null);
+  const [cropperFileName, setCropperFileName] = useState("");
+  const [cropQueue, setCropQueue] = useState<{ src: string; name: string }[]>([]);
 
   // 1. Load Kategori
   useEffect(() => {
@@ -50,20 +60,122 @@ export default function AddProductPage() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      // Create previews
-      const newPreviews = Array.from(files).map((file) =>
-        URL.createObjectURL(file)
-      );
-      setPreviewUrls(newPreviews);
+      const fileArray = Array.from(files);
+
+      // Buat queue untuk semua file yang dipilih
+      const queue = fileArray.map((file) => ({
+        src: URL.createObjectURL(file),
+        name: file.name,
+      }));
+
+      // Set file pertama ke cropper, sisanya ke queue
+      if (queue.length > 0) {
+        setCropperImage(queue[0].src);
+        setCropperFileName(queue[0].name);
+        setCropQueue(queue.slice(1));
+      }
+
+      // Reset input agar bisa pilih file yang sama lagi
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
+  };
+
+  // Handle crop selesai
+  const handleCropComplete = (croppedFile: File) => {
+    const previewUrl = URL.createObjectURL(croppedFile);
+    setPreviewUrls((prev) => [...prev, previewUrl]);
+    setSelectedFiles((prev) => [...prev, croppedFile]);
+
+    // Proses queue berikutnya
+    if (cropQueue.length > 0) {
+      const next = cropQueue[0];
+      setCropperImage(next.src);
+      setCropperFileName(next.name);
+      setCropQueue((prev) => prev.slice(1));
+    } else {
+      // Semua selesai, tutup cropper
+      setCropperImage(null);
+      setCropperFileName("");
+    }
+  };
+
+  // Handle crop cancel
+  const handleCropCancel = () => {
+    setCropperImage(null);
+    setCropperFileName("");
+    setCropQueue([]);
+  };
+
+  // Hapus gambar dari daftar
+  const removeImage = (indexToRemove: number) => {
+    // Hapus preview
+    URL.revokeObjectURL(previewUrls[indexToRemove]);
+    setPreviewUrls((prev) => prev.filter((_, i) => i !== indexToRemove));
+    // Hapus file
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== indexToRemove));
+  };
+
+  // Jadikan gambar sebagai thumbnail utama (pindah ke index 0)
+  const setAsThumbnail = (index: number) => {
+    if (index === 0) return; // Sudah jadi thumbnail
+
+    // Pindahkan ke posisi pertama
+    setPreviewUrls((prev) => {
+      const newUrls = [...prev];
+      const [item] = newUrls.splice(index, 1);
+      newUrls.unshift(item);
+      return newUrls;
+    });
+
+    setSelectedFiles((prev) => {
+      const newFiles = [...prev];
+      const [item] = newFiles.splice(index, 1);
+      newFiles.unshift(item);
+      return newFiles;
+    });
+  };
+
+  // Jadikan gambar sebagai thumbnail utama (pindah ke index 0)
+  const setAsMainThumbnail = (indexToMove: number) => {
+    // Pindahkan preview
+    setPreviewUrls((prev) => {
+      const newUrls = [...prev];
+      const [item] = newUrls.splice(indexToMove, 1);
+      newUrls.unshift(item);
+      return newUrls;
+    });
+    // Pindahkan file
+    setSelectedFiles((prev) => {
+      const newFiles = [...prev];
+      const [item] = newFiles.splice(indexToMove, 1);
+      newFiles.unshift(item);
+      return newFiles;
+    });
   };
 
   // 2. Handle Submit Utama (Produk)
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    // Validasi: minimal 1 gambar
+    if (selectedFiles.length === 0) {
+      alert("Pilih minimal 1 gambar produk!");
+      return;
+    }
+
     setLoading(true);
 
     const formData = new FormData(e.currentTarget);
+
+    // Hapus field 'images' dari form karena kita akan pakai selectedFiles
+    formData.delete("images");
+
+    // Tambahkan semua file yang sudah diakumulasi
+    selectedFiles.forEach((file) => {
+      formData.append("images", file);
+    });
 
     try {
       await createProduct(formData);
@@ -128,37 +240,63 @@ export default function AddProductPage() {
 
             {/* A. AREA PREVIEW GRID (Jika ada gambar) */}
             {previewUrls.length > 0 && (
-              <div className="grid grid-cols-3 gap-4 mb-4">
-                {previewUrls.map((url, index) => (
-                  <div
-                    key={index}
-                    className="relative aspect-square rounded-xl overflow-hidden border border-gray-200 group bg-gray-50"
-                  >
-                    <Image
-                      src={url}
-                      alt={`Preview ${index}`}
-                      fill
-                      className="object-cover"
-                      unoptimized
-                    />
-                    {/* Badge Thumbnail */}
-                    {index === 0 && (
-                      <div className="absolute bottom-0 left-0 right-0 bg-primary/90 text-white text-[10px] font-medium text-center py-1">
-                        Thumbnail Utama
-                      </div>
-                    )}
-                  </div>
-                ))}
+              <>
+                <p className="text-xs text-gray-500 mb-2">
+                  Gambar pertama akan menjadi thumbnail utama. Klik ⭐ untuk menjadikan thumbnail.
+                </p>
+                <div className="grid grid-cols-3 gap-4 mb-4">
+                  {previewUrls.map((url, index) => (
+                    <div
+                      key={index}
+                      className="relative aspect-square rounded-xl overflow-hidden border border-gray-200 group bg-gray-50"
+                    >
+                      <Image
+                        src={url}
+                        alt={`Preview ${index}`}
+                        fill
+                        className="object-cover"
+                        unoptimized
+                      />
+                      {/* Tombol Jadikan Thumbnail (hanya untuk gambar selain pertama) */}
+                      {index !== 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setAsThumbnail(index)}
+                          className="absolute top-1 left-1 bg-yellow-400 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:bg-yellow-500"
+                          title="Jadikan thumbnail utama"
+                        >
+                          <Star size={12} fill="white" />
+                        </button>
+                      )}
+                      {/* Tombol Hapus */}
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                        title="Hapus gambar ini"
+                      >
+                        <X size={12} />
+                      </button>
+                      {/* Badge Thumbnail */}
+                      {index === 0 && (
+                        <div className="absolute bottom-0 left-0 right-0 bg-primary/90 text-white text-[10px] font-medium text-center py-1 flex items-center justify-center gap-1">
+                          <Star size={10} fill="white" />
+                          Thumbnail Utama
+                        </div>
+                      )}
+                    </div>
+                  ))}
 
-                {/* Tombol "Ganti" Kecil */}
-                <label
-                  htmlFor="images-input"
-                  className="relative aspect-square rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 hover:border-primary hover:text-primary transition-all text-gray-400 bg-white"
-                >
-                  <ImageIcon size={24} />
-                  <span className="text-xs mt-1 font-medium">Ganti Foto</span>
-                </label>
-              </div>
+                  {/* Tombol "Tambah" Kecil */}
+                  <label
+                    htmlFor="images-input"
+                    className="relative aspect-square rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 hover:border-primary hover:text-primary transition-all text-gray-400 bg-white"
+                  >
+                    <Plus size={24} />
+                    <span className="text-xs mt-1 font-medium">Tambah Foto</span>
+                  </label>
+                </div>
+              </>
             )}
 
             {/* B. AREA UPLOAD BESAR (Hanya muncul jika BELUM ada gambar) */}
@@ -180,16 +318,15 @@ export default function AddProductPage() {
             )}
 
             {/* C. INPUT FILE ASLI (HIDDEN) */}
-            {/* Input tunggal ini mengontrol kedua area di atas */}
             <input
+              ref={fileInputRef}
               type="file"
-              name="images" // Sesuai Server Action (formData.getAll('images'))
+              name="images"
               id="images-input"
               accept="image/*"
-              multiple // WAJIB: Agar bisa pilih banyak file
+              multiple
               onChange={handleImageChange}
               className="hidden"
-              required
             />
           </div>
 
@@ -344,6 +481,16 @@ export default function AddProductPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* MODAL CROP GAMBAR */}
+      {cropperImage && (
+        <ImageCropper
+          imageSrc={cropperImage}
+          onCropComplete={handleCropComplete}
+          onCancel={handleCropCancel}
+          originalFileName={cropperFileName}
+        />
       )}
     </div>
   );

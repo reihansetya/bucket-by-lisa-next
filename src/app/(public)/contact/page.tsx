@@ -159,8 +159,7 @@ export default function ContactPage() {
                   Tangerang Selatan &amp; Ciledug
                 </p>
                 <p className="text-gray-400 text-sm mb-6">
-                  (Hanya melayani pengiriman online dan pick-up dengan janji
-                  temu)
+                  (Hanya melayani pengiriman online dan pick-up)
                 </p>
 
                 <Link

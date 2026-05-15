@@ -24,7 +24,7 @@ export async function getDashboardStats() {
   const { data: recentProducts, error: recentError } = await supabase
     .from("products")
     .select(
-      "id, name, price, created_at, images, category_id, categories(name)"
+      "id, name, price, created_at, images, category_id, categories(name)",
     ) // Join kategori
     .order("created_at", { ascending: false })
     .limit(5);
